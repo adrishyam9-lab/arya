@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Our Memories 💖</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+height:100vh;
+width:100vw;
+overflow:hidden;
+background:url('super21.jpg') no-repeat center center fixed;
+background-size:cover;
+display:flex;
+justify-content:center;
+align-items:center;
+font-family:sans-serif;
+}
+
+/* Soft Romantic Blur Overlay */
+body::after{
+content:"";
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+backdrop-filter:blur(3px);
+background:rgba(0,0,0,0.2);
+z-index:0;
+}
+
+/* Image Container */
+#imageContainer{
+position:relative;
+width:100%;
+height:100%;
+display:flex;
+justify-content:center;
+align-items:center;
+z-index:3;
+}
+
+.memory-img{
+position:absolute;
+width:80%;
+max-width:350px;
+border-radius:20px;
+box-shadow:0 0 25px rgba(255,255,255,0.6);
+}
+
+/* Slide Animations */
+@keyframes fromLeft{
+0%{transform:translateX(-100vw);opacity:1;}
+30%{transform:translateX(0);opacity:1;}
+70%{transform:translateX(0);opacity:1;}
+100%{transform:translateX(100vw);opacity:0;}
+}
+
+@keyframes fromRight{
+0%{transform:translateX(100vw);opacity:1;}
+30%{transform:translateX(0);opacity:1;}
+70%{transform:translateX(0);opacity:1;}
+100%{transform:translateX(-100vw);opacity:0;}
+}
+
+/* Canvas */
+#fireworks{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+pointer-events:none;
+z-index:1;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="fireworks"></canvas>
+
+<audio id="bgSong" autoplay loop>
+<source src="song.mp3" type="audio/mp3">
+</audio>
+
+<div id="imageContainer"></div>
+
+<script>
+/* ===============================
+   IMAGE SLIDESHOW
+=================================*/
+const images=[
+"supriya1.png",
+"supriya2.png",
+"supriya3.png",
+"supriya4.png",
+"supriya5.png"
+];
+
+const container=document.getElementById("imageContainer");
+let index=0;
+
+function showNextImage(){
+if(index>=images.length){ index=0; }
+
+const img=document.createElement("img");
+img.src=images[index];
+img.className="memory-img";
+
+if(index%2===0){
+img.style.animation="fromLeft 6s ease forwards";
+}else{
+img.style.animation="fromRight 6s ease forwards";
+}
+
+container.appendChild(img);
+
+setTimeout(()=>{
+img.remove();
+index++;
+showNextImage();
+},6000);
+}
+showNextImage();
+
+/* Audio Unlock for Mobile */
+document.body.addEventListener("click",()=>{
+document.getElementById("bgSong").play();
+});
+
+/* ===============================
+   3D GLOW FIREWORK ENGINE
+=================================*/
+
+const canvas=document.getElementById("fireworks");
+const ctx=canvas.getContext("2d");
+
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+window.addEventListener("resize",()=>{
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+});
+
+let particles=[];
+let rockets=[];
+
+class Rocket{
+constructor(){
+this.x=Math.random()*canvas.width;
+this.y=canvas.height;
+this.speed=Math.random()*3+4;
+this.color="hsl("+Math.random()*360+",100%,60%)";
+this.exploded=false;
+}
+
+update(){
+this.y-=this.speed;
+if(this.y<canvas.height/2 && !this.exploded){
+this.exploded=true;
+explode(this.x,this.y,this.color);
+}
+}
+
+draw(){
+ctx.shadowBlur=15;
+ctx.shadowColor=this.color;
+ctx.fillStyle=this.color;
+ctx.beginPath();
+ctx.arc(this.x,this.y,4,0,Math.PI*2);
+ctx.fill();
+ctx.shadowBlur=0;
+}
+}
+
+class Particle{
+constructor(x,y,color){
+this.x=x;
+this.y=y;
+this.z=Math.random()*2+1;  // depth
+this.speedX=(Math.random()-0.5)*6;
+this.speedY=(Math.random()-0.5)*6;
+this.life=100;
+this.color=color;
+}
+
+update(){
+this.x+=this.speedX*this.z;
+this.y+=this.speedY*this.z;
+this.life-=2;
+}
+
+draw(){
+ctx.globalAlpha=this.life/100;
+ctx.shadowBlur=20;
+ctx.shadowColor=this.color;
+ctx.fillStyle=this.color;
+ctx.beginPath();
+ctx.arc(this.x,this.y,3*this.z,0,Math.PI*2);
+ctx.fill();
+ctx.shadowBlur=0;
+ctx.globalAlpha=1;
+}
+}
+
+function explode(x,y,color){
+for(let i=0;i<70;i++){
+particles.push(new Particle(x,y,color));
+}
+}
+
+/* Heart Burst */
+function heartExplosion(x,y){
+for(let i=0;i<100;i++){
+let angle=i*(Math.PI*2/100);
+let radius=40;
+let hx=x+radius*Math.sin(angle)*Math.sin(angle)*Math.cos(angle);
+let hy=y-radius*Math.sin(angle);
+particles.push(new Particle(hx,hy,"pink"));
+}
+}
+
+/* Beat Sync Heart */
+const audio=document.getElementById("bgSong");
+audio.addEventListener("timeupdate",()=>{
+if(Math.floor(audio.currentTime)%6===0){
+heartExplosion(Math.random()*canvas.width,canvas.height/3);
+}
+});
+
+/* Animation Loop */
+function animate(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+if(Math.random()<0.04){
+rockets.push(new Rocket());
+}
+
+rockets.forEach((r,i)=>{
+r.update();
+r.draw();
+if(r.exploded){
+rockets.splice(i,1);
+}
+});
+
+particles.forEach((p,i)=>{
+p.update();
+p.draw();
+if(p.life<=0){
+particles.splice(i,1);
+}
+});
+
+requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+
+</body>
+</html>
